@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rota Builder</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f3f5f8;--fg:#18202b;--mut:#5d6b7c;--card:#fff;--line:#d5dce5;--acc:#1f4e8c;--accfg:#fff;--m:#f6c453;--mfg:#3b2a00;--n:#27337a;--nfg:#fff;--ok:#1d7a46;--bad:#b3341f;--wk:#eef1f5}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10151d;--fg:#e6ebf2;--mut:#93a1b4;--card:#171e29;--line:#2c3746;--acc:#6aa3ee;--accfg:#08121f;--m:#d9a82f;--mfg:#1d1500;--n:#4a5bd0;--nfg:#fff;--ok:#5fcf8d;--bad:#ff8a73;--wk:#1c2431}}
+:root[data-theme="dark"]{--bg:#10151d;--fg:#e6ebf2;--mut:#93a1b4;--card:#171e29;--line:#2c3746;--acc:#6aa3ee;--accfg:#08121f;--m:#d9a82f;--mfg:#1d1500;--n:#4a5bd0;--nfg:#fff;--ok:#5fcf8d;--bad:#ff8a73;--wk:#1c2431}
+*,*:before,*:after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+h1{font:700 26px/1.2 Georgia,"Times New Roman",serif;margin:0 0 4px}
+h2{font:700 17px/1.3 Georgia,serif;margin:28px 0 10px}
+p.sub{color:var(--mut);margin:0 0 18px;max-width:70ch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 14px}
+label{display:flex;flex-direction:column;font-size:13px;color:var(--mut);gap:4px}
+input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);width:100%}
+input:focus-visible,button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button{font:inherit;font-weight:600;padding:9px 16px;border:0;border-radius:6px;background:var(--acc);color:var(--accfg);cursor:pointer}
+button.sm{padding:4px 10px;font-size:13px}
+button.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+.go{align-self:end}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--card)}
+.stat b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;color:var(--mut)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.warn{border-left:4px solid var(--bad);padding:10px 14px;background:var(--card);border-radius:6px;margin:12px 0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{min-width:46px;text-align:center;padding:6px 8px;border-radius:6px;font-weight:700;font-size:13px}
+.M{background:var(--m);color:var(--mfg)}.N{background:var(--n);color:var(--nfg)}.off{background:transparent;color:var(--mut);font-weight:400}
+.chip.off{border:1px dashed var(--line)}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%}
+th,td{padding:4px 6px;text-align:center;border-bottom:1px solid var(--line);font-size:12.5px;white-space:nowrap}
+th{background:var(--wk);font-weight:600;color:var(--mut)}
+td.nm,th.nm{text-align:left;position:sticky;left:0;background:var(--card);font-weight:600}
+th.nm{background:var(--wk)}
+td.wk{background:var(--wk)}
+td.M,td.N{font-weight:700}td.off{font-weight:400;opacity:.6}
+td.tot{font-weight:600;border-left:1px solid var(--line)}
+.opt-tbl td,.opt-tbl th{font-size:14px;padding:7px 10px}
+.note{color:var(--mut);font-size:13px;max-width:80ch}
+.tt{display:flex;gap:8px;justify-content:flex-end;margin-bottom:6px}
+</style></head>
+<body><main>
+<h1>Rota Builder</h1>
+<p class="sub">Tell it how many people each shift needs and how many hours a week they should work. It finds how many staff you need, builds a repeating rota pattern, and shows what each person works.</p>
+
+<div class="card"><form id="f" autocomplete="off">
+<label>People needed each morning<input id="m" type="number" min="0" step="1" value="3"></label>
+<label>People needed each night<input id="n" type="number" min="0" step="1" value="1"></label>
+<label>Morning shift (hours)<input id="hm" type="number" min="1" step="0.5" value="9"></label>
+<label>Night shift (hours)<input id="hn" type="number" min="1" step="0.5" value="16"></label>
+<label>Fewest hours per 7 days<input id="lo" type="number" min="1" step="0.5" value="40"></label>
+<label>Most hours per 7 days<input id="hi" type="number" min="1" step="0.5" value="45"></label>
+<label>Rota length (days)<input id="days" type="number" min="7" max="62" step="1" value="28"></label>
+<label>Start date<input id="start" type="date"></label>
+<button class="go" type="submit">Build rota</button>
+</form></div>
+
+<div id="out"></div>
+<p class="note" style="margin-top:28px">How it works: every person follows the same repeating cycle but starts at a different point, so every day has the same cover. Hours per 7 days is the average over the whole cycle: any single week can run higher or lower because each morning or night that enters or leaves the week changes it. The pattern keeps a night shift followed by a day off and avoids a morning straight into a night, then keeps working runs short. It assumes mornings end in the evening and nights start in the evening and end next morning.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let chosen=null;
+function rng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function score(s){const L=s.length;let p=0;
+ for(let i=0;i<L;i++){const a=s[i],b=s[(i+1)%L],c=s[(i+2)%L];
+  if(a==='N'){if(b!=='off')p+=1000;else if(c==='M')p+=4;else if(c==='N')p+=1}
+  if(a==='M'&&b==='N')p+=30}
+ const st=s.findIndex(x=>x==='off');if(st<0)return p+500;
+ let run=0;for(let k=1;k<=L;k++){if(s[(st+k)%L]!=='off')run++;else{if(run>3)p+=10*(run-3);run=0}}
+ return p}
+function build(L,m,n){const base=[...Array(m).fill('M'),...Array(n).fill('N'),...Array(L-m-n).fill('off')];
+ const r=rng(12345);let best=null,bs=1e9;
+ for(let k=0;k<40&&bs>0;k++){const s=base.slice();for(let i=L-1;i>0;i--){const j=Math.floor(r()*(i+1));[s[i],s[j]]=[s[j],s[i]]}
+  let sc=score(s);
+  for(let i=0;i<3000;i++){const a=Math.floor(r()*L),b=Math.floor(r()*L);if(s[a]===s[b])continue;[s[a],s[b]]=[s[b],s[a]];
+   const ns=score(s);if(ns<=sc)sc=ns;else[s[a],s[b]]=[s[b],s[a]]}
+  if(sc<bs){bs=sc;best=s.slice()}}
+ let i0=best.indexOf('N');if(i0<0)i0=best.indexOf('M');if(i0<0)i0=0;
+ return{seq:best.slice(i0).concat(best.slice(0,i0)),score:bs}}
+function fmt(x,d=1){return(Math.round(x*Math.pow(10,d))/Math.pow(10,d)).toString()}
+function run(){
+ const v=id=>parseFloat($(id).value),m=Math.round(v('m')),n=Math.round(v('n')),hm=v('hm'),hn=v('hn'),lo=v('lo'),hi=v('hi'),days=Math.round(v('days'));
+ const out=$('out');
+ if(!(m>=0&&n>=0&&m+n>=1)||!(hm>0&&hn>0)||!(lo>0&&hi>=lo)||!(days>=7&&days<=62)){out.innerHTML='<div class="warn">Check the inputs: at least one person is needed, shift hours must be above 0, the most hours must be at least the fewest, and the rota must be 7 to 62 days.</div>';return}
+ const D=m*hm+n*hn,Lmin=m+2*n,mid=(lo+hi)/2;
+ const first=Math.max(Lmin,Math.floor(D*7/hi)-1),last=Math.min(60,Math.max(first+3,Math.ceil(D*7/lo)+2));
+ const opts=[];for(let L=first;L<=last;L++){const w=D*7/L;opts.push({L,w,st:w<lo-0.05?'Below':(w>hi+0.05?'Above':'Within')})}
+ const fits=opts.filter(o=>o.st==='Within');
+ let L;
+ if(chosen&&opts.some(o=>o.L===chosen))L=chosen;else if(fits.length)L=fits[0].L;else L=opts.reduce((a,b)=>Math.abs(b.w-mid)<Math.abs(a.w-mid)?b:a).L;
+ const wk=D*7/L,res=build(L,m,n),seq=res.seq;
+ // stats
+ const cycH=m>=0?(seq.filter(x=>x==='M').length*hm+seq.filter(x=>x==='N').length*hn):0;
+ const win=[];for(let d=0;d<L;d++){let h=0;for(let i=0;i<7;i++){const x=seq[(d+i)%L];h+=x==='M'?hm:x==='N'?hn:0}win.push(h)}
+ let offAfter=99,offBefore=99;
+ seq.forEach((x,i)=>{if(x!=='N')return;let k=0;while(seq[(i+1+k)%L]==='off'&&k<L)k++;offAfter=Math.min(offAfter,k);
+  let j=0;while(seq[(i-1-j+2*L)%L]==='off'&&j<L)j++;if(seq[(i-1-j+2*L)%L]==='M')offBefore=Math.min(offBefore,j)});
+ const inr=wk>=lo-0.05&&wk<=hi+0.05;
+ let h='';
+ if(!fits.length)h+=`<div class="warn"><b>No whole number of staff gives ${lo} to ${hi} hours per 7 days.</b> Each person's average is total weekly hours (${fmt(D*7)}) divided by staff. The closest options are listed below. Changing a shift length or widening the range would make one fit.</div>`;
+ h+=`<h2>Result</h2><div class="stats">
+ <div class="stat"><b>${L}</b><span>staff needed (cycle is ${L} days)</span></div>
+ <div class="stat"><b>${fmt(D)}</b><span>hours to cover each day</span></div>
+ <div class="stat"><b class="${inr?'ok':'bad'}">${fmt(wk)}</b><span>hours per 7 days, average ${inr?'(within range)':(wk<lo?'(below range)':'(above range)')}</span></div>
+ <div class="stat"><b>${fmt(wk*4)}</b><span>hours per 28 days (weekly × 4)</span></div>
+ <div class="stat"><b>${fmt(cycH)}</b><span>hours in one cycle</span></div>
+ <div class="stat"><b>${fmt(Math.min(...win))} to ${fmt(Math.max(...win))}</b><span>range of any single 7-day window</span></div></div>`;
+ h+=`<h2>Staffing options</h2><div class="scroll"><table class="opt-tbl"><tr><th>Staff</th><th>Hours per 7 days</th><th>Hours per 28 days</th><th>Against ${lo}–${hi}</th><th></th></tr>`+
+  opts.map(o=>`<tr><td>${o.L}${o.L===L?' (shown)':''}</td><td>${fmt(o.w)}</td><td>${fmt(o.w*4)}</td><td class="${o.st==='Within'?'ok':'bad'}">${o.st==='Within'?'Within range':o.st+' range'}</td><td>${o.L===L?'':`<button class="sm ghost" data-staff="${o.L}">Use ${o.L}</button>`}</td></tr>`).join('')+`</table></div>`;
+ h+=`<h2>Rota pattern</h2><div class="card"><div class="chips">`+seq.map(x=>`<span class="chip ${x}">${x==='off'?'off':x}</span>`).join('')+`</div>
+ <div class="note">M = morning (${hm} h), N = night (${hn} h). The pattern repeats every ${L} days. Person 2 starts one day later in the cycle than person 1, person 3 one day later again, and so on.<br>
+ Days off after a night: at least ${offAfter===99?'n/a':offAfter}. Days off between a morning and the next night: at least ${offBefore===99?'n/a':offBefore}.${res.score>=500?'<br><b class="bad">This pattern could not avoid a rest-rule clash: there are too few off days for this much cover.</b>':''}</div></div>`;
+ // rota
+ let sd=$('start').value?$('start').value.split('-').map(Number):null;
+ const base=sd?new Date(sd[0],sd[1]-1,sd[2]):new Date();
+ const dl=[];for(let d=0;d<days;d++){const t=new Date(base.getFullYear(),base.getMonth(),base.getDate()+d);dl.push({w:t.toLocaleDateString('en-GB',{weekday:'short'}),d:t.getDate(),we:t.getDay()===0||t.getDay()===6})}
+ const rows=[],cover=Array.from({length:days},()=>({M:0,N:0}));
+ for(let k=0;k<L;k++){const r={mo:0,ni:0,c:[]};for(let d=0;d<days;d++){const x=seq[(d+k)%L];r.c.push(x);if(x==='M'){r.mo++;cover[d].M++}if(x==='N'){r.ni++;cover[d].N++}}r.h=r.mo*hm+r.ni*hn;r.dw=r.mo+r.ni;rows.push(r)}
+ const tot=rows.map(r=>r.h);
+ h+=`<h2>Rota for ${days} days</h2><div class="stats" style="margin-bottom:10px">
+ <div class="stat"><b>${fmt(Math.min(...tot))} to ${fmt(Math.max(...tot))}</b><span>hours per person over ${days} days</span></div>
+ <div class="stat"><b>${fmt(tot.reduce((a,b)=>a+b,0)/L)}</b><span>average hours per person</span></div>
+ <div class="stat"><b>${Math.min(...rows.map(r=>r.dw))} to ${Math.max(...rows.map(r=>r.dw))}</b><span>days worked per person</span></div></div>
+ <div class="scroll"><table><tr><th class="nm">Person</th>`+dl.map(x=>`<th ${x.we?'style="background:var(--line)"':''}>${x.w}</th>`).join('')+`<th>Mornings</th><th>Nights</th><th>Days</th><th>Hours</th><th>Per 7 days</th></tr>
+ <tr><th class="nm"></th>`+dl.map(x=>`<th ${x.we?'style="background:var(--line)"':''}>${x.d}</th>`).join('')+`<th></th><th></th><th></th><th></th><th></th></tr>`+
+ rows.map((r,k)=>`<tr><td class="nm">Person ${k+1}</td>`+r.c.map((x,d)=>`<td class="${x}${x==='off'&&dl[d].we?' wk':''}">${x==='off'?'·':x}</td>`).join('')+`<td class="tot">${r.mo}</td><td>${r.ni}</td><td>${r.dw}</td><td><b>${fmt(r.h)}</b></td><td>${fmt(r.h*7/days)}</td></tr>`).join('')+
+ `<tr><td class="nm">Mornings on duty</td>`+cover.map(c=>`<td>${c.M}</td>`).join('')+`<td colspan="5"></td></tr><tr><td class="nm">Nights on duty</td>`+cover.map(c=>`<td>${c.N}</td>`).join('')+`<td colspan="5"></td></tr>
+ <tr><td class="nm">Cover check</td>`+cover.map(c=>c.M===m&&c.N===n?'<td class="ok">✓</td>':'<td class="bad">✗</td>').join('')+`<td colspan="5"></td></tr></table></div>`;
+ out.innerHTML=h;
+ out.querySelectorAll('button[data-staff]').forEach(b=>b.onclick=()=>{chosen=+b.dataset.staff;run()});
+}
+const t=new Date();$('start').value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+$('f').addEventListener('submit',e=>{e.preventDefault();chosen=null;run()});
+run();
+</script></body></html>
